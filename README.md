@@ -1,19 +1,38 @@
-# Website Loader
+# Destroy Any Website
 
-A minimal browser-based website preview tool. The current build focuses only on loading and displaying a real URL in an iframe.
+Version **0.4.0** introduces a modular frontend and a Cloudflare Worker backend.
 
-## Use
+## Architecture
 
-Open `index.html`, enter a URL and press **Website laden**. You can reload the current page or open it in a separate tab.
+- `index.html`: application shell
+- `assets/style.css`: responsive interface
+- `assets/app.js`: URL handling, backend health check and preview controls
+- `config.js`: public backend endpoint
+- Cloudflare Worker `destroy-any-website-proxy`: fetches external pages and removes common iframe-blocking response headers
 
-## Important browser limitation
+## How it works
 
-Some websites block iframe embedding using `X-Frame-Options` or Content Security Policy (`frame-ancestors`). A normal browser page cannot bypass those protections. The loader reports that an embed may be blocked and provides an external-tab fallback. The browser does not expose a reliable way for this page to inspect the cross-origin frame's internal error state.
+1. Enter an HTTP or HTTPS URL.
+2. The frontend checks the Worker at `/health`.
+3. The preview iframe loads `/proxy?url=...`.
+4. The Worker fetches the page, follows a limited number of redirects, strips common frame-blocking headers and rewrites ordinary links/forms to continue through the proxy.
 
-## GitHub Pages
+## Important limitations
 
-Enable Pages in repository settings: **Deploy from a branch** → `main` → `/(root)`.
+This is a compatibility proxy, not a complete remote browser. Websites that rely on strict authentication, bot checks, complex JavaScript navigation, service workers, WebSockets, or origin-bound cookies may not work correctly. Some assets are loaded directly from the original host. Removing frame headers does not guarantee that a site can be reproduced safely or completely.
+
+The proxy only accepts HTTP/HTTPS URLs, rejects obvious local/private targets and limits redirects. It is a public endpoint, so it should not be treated as a general-purpose private browsing service.
+
+## Deployment
+
+The frontend is hosted with GitHub Pages:
 
 https://lordlolqdh.github.io/destroy-any-website/
 
-No build step, backend, API key or external dependency is required.
+The backend is deployed as a Cloudflare Worker:
+
+https://destroy-any-website-proxy.adam-kraus.workers.dev/health
+
+To change the backend host, update `proxyBaseUrl` in `config.js`.
+
+No API keys are exposed in the repository.
