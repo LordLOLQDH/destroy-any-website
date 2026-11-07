@@ -1,92 +1,26 @@
 (() => {
-  const config = window.APP_CONFIG || {};
-  const base = String(config.proxyBaseUrl || "").replace(/\/$/, "");
-  const $ = (id) => document.getElementById(id);
-  const form = $("load-form");
-  const input = $("website-url");
-  const frame = $("website-frame");
-  const status = $("status");
-  const placeholder = $("placeholder");
-  const loadButton = $("load-button");
-  const reloadButton = $("reload-button");
-  const openButton = $("open-button");
-  const backendState = $("backend-state");
-  let currentUrl = "";
-
-  function normalise(value) {
-    let valueToCheck = value.trim();
-    if (!/^https?:\/\//i.test(valueToCheck)) valueToCheck = "https://" + valueToCheck;
-    try {
-      const parsed = new URL(valueToCheck);
-      if (!["http:", "https:"].includes(parsed.protocol)) return null;
-      return parsed.href;
-    } catch { return null; }
-  }
-
-  function proxyUrl(url) {
-    return base + "/proxy?url=" + encodeURIComponent(url);
-  }
-
-  async function checkBackend() {
-    if (!base) {
-      backendState.textContent = "Backend nicht konfiguriert";
-      backendState.className = "backend-state offline";
-      return false;
-    }
-    try {
-      const response = await fetch(base + "/health", { cache: "no-store" });
-      if (!response.ok) throw new Error("Backend antwortet nicht");
-      const data = await response.json();
-      if (!data.ok) throw new Error("Ungültige Backend-Antwort");
-      backendState.textContent = "Backend verbunden · " + data.version;
-      backendState.className = "backend-state online";
-      return true;
-    } catch {
-      backendState.textContent = "Backend nicht erreichbar";
-      backendState.className = "backend-state offline";
-      return false;
-    }
-  }
-
-  function load(url) {
-    currentUrl = url;
-    input.value = url;
-    placeholder.hidden = true;
-    frame.classList.add("visible");
-    loadButton.disabled = true;
-    reloadButton.disabled = false;
-    openButton.disabled = false;
-    status.textContent = "Backend lädt " + new URL(url).hostname + " …";
-    frame.src = proxyUrl(url);
-  }
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const url = normalise(input.value);
-    if (!url) {
-      status.textContent = "Bitte gib eine gültige HTTP- oder HTTPS-Adresse ein.";
-      return;
-    }
-    if (!await checkBackend()) {
-      status.textContent = "Das Backend ist nicht erreichbar. Die Website wurde nicht geladen.";
-      return;
-    }
-    load(url);
-  });
-
-  frame.addEventListener("load", () => {
-    if (!currentUrl) return;
-    loadButton.disabled = false;
-    status.textContent = "Antwort vom Proxy erhalten. Die Darstellung der Zielseite wird geladen.";
-  });
-
-  reloadButton.addEventListener("click", () => {
-    if (currentUrl) load(currentUrl);
-  });
-
-  openButton.addEventListener("click", () => {
-    if (currentUrl) window.open(currentUrl, "_blank", "noopener,noreferrer");
-  });
-
+  const config=window.APP_CONFIG||{},base=String(config.proxyBaseUrl||"").replace(/\/$/,"");
+  const $=id=>document.getElementById(id),form=$("load-form"),input=$("website-url"),frame=$("website-frame"),status=$("status"),placeholder=$("placeholder"),loadButton=$("load-button"),reloadButton=$("reload-button"),openButton=$("open-button"),gameButton=$("game-button"),backendState=$("backend-state"),viewport=$("viewport"),gameLayer=$("game-layer"),player=$("player"),flash=$("shot-flash");
+  let currentUrl="",gameActive=false,playerX=.5,playerY=.55,moveVector={x:0,y:0},aimVector={x:0,y:-1},fireTimer=null,moveTimer=null;
+  function normalise(value){let v=value.trim();if(!/^https?:\/\//i.test(v))v="https://"+v;try{const u=new URL(v);return ["http:","https:"].includes(u.protocol)?u.href:null}catch{return null}}
+  function proxyUrl(url){return base+"/proxy?url="+encodeURIComponent(url)}
+  async function checkBackend(){if(!base){backendState.textContent="Backend nicht konfiguriert";backendState.className="backend-state offline";return false}try{const r=await fetch(base+"/health",{cache:"no-store"});if(!r.ok)throw Error();const d=await r.json();backendState.textContent="Backend verbunden · "+d.version;backendState.className="backend-state online";return true}catch{backendState.textContent="Backend nicht erreichbar";backendState.className="backend-state offline";return false}}
+  function load(url){exitGame();currentUrl=url;input.value=url;placeholder.hidden=true;frame.classList.add("visible");loadButton.disabled=true;reloadButton.disabled=false;openButton.disabled=false;gameButton.disabled=true;status.textContent="Backend lädt "+new URL(url).hostname+" …";frame.src=proxyUrl(url)}
+  function renderPlayer(){player.style.left=(playerX*100)+"%";player.style.top=(playerY*100)+"%"}
+  function sendPrepare(){try{frame.contentWindow.postMessage({source:"destroy-any-website",type:"prepare"},"*")}catch{}}
+  function startGame(){if(!currentUrl||gameActive)return;gameActive=true;document.body.classList.add("game-active");viewport.classList.add("playing");gameLayer.classList.add("active");playerX=.5;playerY=.56;renderPlayer();sendPrepare();status.textContent="Game-Modus aktiv · Linker Stick bewegen · Rechter Stick zielen und feuern";moveTimer=setInterval(()=>{if(!gameActive)return;const rect=viewport.getBoundingClientRect();playerX=Math.max(.035,Math.min(.965,playerX+moveVector.x*.012));playerY=Math.max(.08,Math.min(.9,playerY+moveVector.y*.012));renderPlayer()},16)}
+  function exitGame(){if(!gameActive)return;gameActive=false;document.body.classList.remove("game-active");viewport.classList.remove("playing");gameLayer.classList.remove("active");clearInterval(moveTimer);clearInterval(fireTimer);moveTimer=fireTimer=null;moveVector={x:0,y:0};document.querySelectorAll(".joystick").forEach(s=>{s.classList.remove("engaged");const k=s.querySelector(".stick-knob");k.style.transform="translate(0,0)"});status.textContent="Website geladen. Du kannst den Game-Modus erneut starten."}
+  function shoot(){if(!gameActive)return;const rect=viewport.getBoundingClientRect(),px=playerX*rect.width,py=playerY*rect.height;const reach=Math.max(rect.width,rect.height)*1.25;const tx=Math.max(4,Math.min(rect.width-4,px+aimVector.x*reach)),ty=Math.max(4,Math.min(rect.height-4,py+aimVector.y*reach));frame.contentWindow.postMessage({source:"destroy-any-website",type:"shoot",x:tx/rect.width,y:ty/rect.height},"*");flash.style.left=tx+"px";flash.style.top=ty+"px";flash.classList.remove("fire");void flash.offsetWidth;flash.classList.add("fire")}
+  function bindStick(stick){const baseEl=stick.querySelector(".stick-base"),knob=stick.querySelector(".stick-knob"),kind=stick.dataset.stick;let pointer=null;function update(e){const r=baseEl.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,len=Math.hypot(dx,dy)||1,scale=Math.min(1,max/len),x=dx*scale,y=dy*scale;knob.style.transform="translate("+x+"px,"+y+"px)";const v={x:x/max,y:y/max};if(kind==="move")moveVector=v;else{if(Math.hypot(v.x,v.y)>.12)aimVector=v}}
+    stick.addEventListener("pointerdown",e=>{if(!gameActive)return;pointer=e.pointerId;stick.setPointerCapture(pointer);stick.classList.add("engaged");update(e);if(kind==="aim"){shoot();clearInterval(fireTimer);fireTimer=setInterval(shoot,280)}});
+    stick.addEventListener("pointermove",e=>{if(pointer===e.pointerId)update(e)});
+    const end=e=>{if(pointer!==e.pointerId)return;pointer=null;stick.classList.remove("engaged");knob.style.transform="translate(0,0)";if(kind==="move")moveVector={x:0,y:0};else clearInterval(fireTimer)};
+    stick.addEventListener("pointerup",end);stick.addEventListener("pointercancel",end);stick.addEventListener("lostpointercapture",end)}
+  document.querySelectorAll(".joystick").forEach(bindStick);
+  form.addEventListener("submit",async e=>{e.preventDefault();const url=normalise(input.value);if(!url){status.textContent="Bitte gib eine gültige HTTP- oder HTTPS-Adresse ein.";return}if(!await checkBackend()){status.textContent="Das Backend ist nicht erreichbar. Die Website wurde nicht geladen.";return}load(url)});
+  frame.addEventListener("load",()=>{if(!currentUrl)return;loadButton.disabled=false;gameButton.disabled=false;status.textContent="Website geladen. Jetzt kannst du den Game-Modus starten.";if(gameActive)sendPrepare()});
+  reloadButton.addEventListener("click",()=>{if(currentUrl)load(currentUrl)});
+  openButton.addEventListener("click",()=>{if(currentUrl)window.open(currentUrl,"_blank","noopener,noreferrer")});
+  gameButton.addEventListener("click",startGame);$("exit-game-button").addEventListener("click",exitGame);
   checkBackend();
 })();
