@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <meta name="theme-color" content="#f5f6f8">
   <title>Destroy Any Website</title>
   <link rel="stylesheet" href="assets/style.css">
@@ -10,12 +10,12 @@
   <script defer src="assets/app.js"></script>
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="./">DESTROY ANY WEBSITE</a><span class="version">0.4.0 · PROXY MODE</span></header>
+  <header class="topbar"><a class="brand" href="./">DESTROY ANY WEBSITE</a><span class="version">0.5.0 · GAME MODE</span></header>
   <main class="layout">
     <section class="intro">
       <p class="eyebrow">WEBSITE SANDBOX</p>
-      <h1>Eine Website laden.</h1>
-      <p class="description">Die Zielseite wird über das Backend abgerufen und in diesem Fenster angezeigt. Das ist die technische Grundlage für die spätere Zerstörungs-Sandbox.</p>
+      <h1>Eine Website laden. Dann loslegen.</h1>
+      <p class="description">Lade eine Website und wechsle anschließend in den Game-Modus. Bewege deine Figur und schieße auf Wörter, damit die Buchstaben herunterfallen.</p>
     </section>
     <form id="load-form" class="urlbar">
       <label class="sr-only" for="website-url">Website-Adresse</label>
@@ -27,13 +27,21 @@
       <div class="toolbar-actions">
         <button id="reload-button" class="secondary" type="button" disabled>Neu laden</button>
         <button id="open-button" class="secondary" type="button" disabled>Original öffnen ↗</button>
+        <button id="game-button" class="game-launch" type="button" disabled>Game-Modus starten</button>
       </div>
     </div>
-    <section class="viewport">
+    <section id="viewport" class="viewport">
       <div id="placeholder" class="placeholder"><div class="placeholder-icon">↗</div><h2>Bereit</h2><p>Gib oben eine Website-Adresse ein.</p></div>
       <iframe id="website-frame" title="Website Vorschau" allow="fullscreen; autoplay" referrerpolicy="no-referrer"></iframe>
+      <div id="game-layer" class="game-layer" aria-label="Game-Steuerung">
+        <div class="game-top"><span class="game-label">DESTROY MODE <small>· 1 Waffe</small></span><button id="exit-game-button" type="button">Beenden ×</button></div>
+        <div id="player" class="player" aria-label="Spielfigur"><span class="player-head"></span><span class="player-body"></span><span class="player-arm"></span><span class="player-gun"></span><span class="player-leg left"></span><span class="player-leg right"></span></div>
+        <div class="joystick joystick-left" data-stick="move"><div class="stick-base"><div class="stick-knob"></div></div><span>BEWEGEN</span></div>
+        <div class="joystick joystick-right" data-stick="aim"><div class="stick-base"><div class="stick-knob"></div></div><span>ZIELEN · FEUERN</span></div>
+        <div id="shot-flash" class="shot-flash"></div>
+      </div>
     </section>
-    <footer class="footnote"><span id="backend-state" class="backend-state">Backend wird geprüft</span><span>Proxy kann nicht jede Website vollständig darstellen. Logins, Captchas und komplexe Web-Apps können weiterhin eingeschränkt sein.</span></footer>
+    <footer class="footnote"><span id="backend-state" class="backend-state">Backend wird geprüft</span><span>Einige Websites blockieren weiterhin bestimmte Inhalte. Treffer-Effekte sind nur im Game-Modus sichtbar.</span></footer>
   </main>
 </body>
 </html>
